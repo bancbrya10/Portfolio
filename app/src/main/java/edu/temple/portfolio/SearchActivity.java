@@ -1,13 +1,21 @@
 package edu.temple.portfolio;
 
+import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONException;
@@ -27,7 +35,36 @@ public class SearchActivity extends AppCompatActivity {
     EditText searchBar;
     Button addButton;
     Button cancelButton;
-    JSONObject stock;
+    TextView stockText;
+    Boolean connected;
+    QuoteService quoteService;
+
+    ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            QuoteService.QuoteBinder binder = (QuoteService.QuoteBinder) service;
+            quoteService = binder.getService();
+            connected = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            connected = false;
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent serviceIntent = new Intent(this, QuoteService.class);
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(serviceConnection);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,66 +74,15 @@ public class SearchActivity extends AppCompatActivity {
         searchBar = findViewById(R.id.search_stocks);
         addButton = findViewById(R.id.add_button);
         cancelButton = findViewById(R.id.cancel_button);
+        stockText = findViewById(R.id.StockText);
+        Bundle extras = getIntent().getExtras();
+        connected = extras.getBoolean("isConnected");
 
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                //Initialize the prefix for stock json info and add the stock symbol entered by the user
-                String stockUrlStr = "http://dev.markitondemand.com/MODApis/Api/v2/Quote/json/?symbol=";
-                stockUrlStr += searchBar.getText().toString();
-
-                //Initialize the reader that will be used to get the json info from the url
-                BufferedReader reader = null;
-
-                try {
-                    //Open a connection to the url and read the stream to gather json info
-                    URL url = new URL(stockUrlStr);
-                    URLConnection urlConnection = url.openConnection();
-                    reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                    String buffer = "";
-                    String toAdd;
-                    boolean isJson = false;
-
-                    //Skip the portion of the HTML that does not include the json info
-                    //Add json code to the buffer based on the flag
-                    while ((toAdd = reader.readLine()) != null) {
-                        if (isJson) {
-                            buffer += toAdd;
-                        }
-                        if (toAdd.contains("{")) {
-                            isJson = true;
-                        }
-                        if (toAdd.contains("}")) {
-                            isJson = false;
-                        }
-                    }
-
-                    //Create a new json object from the info in the buffer
-                    Toast.makeText(getApplicationContext(), buffer, Toast.LENGTH_LONG).show();
-                    //stock = new JSONObject(buffer);
-                }
-                catch (MalformedURLException e) {
-                    e.printStackTrace();
-                    System.exit(0);
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(0);
-                }
-                //catch (JSONException e){
-                  //  e.printStackTrace();
-                    //System.exit(0);
-                //}
-                finally {
-                    //Try to close the reader if it is not null
-                    try {
-                        if (reader != null) {
-                            reader.close();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                if(connected){
+                    quoteService.getQuote(searchBar.getText().toString(), serviceHandler);
                 }
             }
         });
@@ -108,5 +94,31 @@ public class SearchActivity extends AppCompatActivity {
             }
         });
     }
+
+    Handler serviceHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            JSONObject responseObject = (JSONObject) msg.obj;
+            Stock currentStock = null;
+            try {
+                currentStock = new Stock(responseObject.getJSONObject("list")
+                        .getJSONArray("resources")
+                        .getJSONObject(0)
+                        .getJSONObject("resource")
+                        .getJSONObject("fields"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            updateViews(currentStock);
+
+            return false;
+        }
+    });
+
+    private void updateViews(Stock currentStock) {
+        stockText.setText(currentStock.toString());
+    }
+
 }
 
