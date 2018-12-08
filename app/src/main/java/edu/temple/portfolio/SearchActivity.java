@@ -74,7 +74,7 @@ public class SearchActivity extends AppCompatActivity {
         searchBar = findViewById(R.id.search_stocks);
         addButton = findViewById(R.id.add_button);
         cancelButton = findViewById(R.id.cancel_button);
-        stockText = findViewById(R.id.StockText);
+        stockText = findViewById(R.id.stockText);
         Bundle extras = getIntent().getExtras();
         connected = extras.getBoolean("isConnected");
 
