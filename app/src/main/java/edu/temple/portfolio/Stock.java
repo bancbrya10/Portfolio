@@ -5,18 +5,18 @@ import org.json.JSONObject;
 
 public class Stock {
     private String name, symbol;
-    private double currentPrice, openingPrice;
+    private double lastPrice, open;
 
-    public Stock(String name, String symbol, double currentPrice, double openingPrice) {
+    public Stock(String name, String symbol, double lastPrice, double openingPrice) {
         this.name = name;
         this.symbol = symbol;
-        this.currentPrice = currentPrice;
-        this.openingPrice = openingPrice;
+        this.lastPrice = lastPrice;
+        this.open = openingPrice;
     }
 
     public Stock (JSONObject stockObject) throws JSONException {
-        this(stockObject.getString("name"), stockObject.getString("symbol"),
-                stockObject.getDouble("currentPrice"), stockObject.getDouble("openingPrice"));
+        this(stockObject.getString("Name"), stockObject.getString("Symbol"),
+                stockObject.getDouble("LastPrice"), stockObject.getDouble("Open"));
     }
 
     public String getName() {
@@ -35,20 +35,20 @@ public class Stock {
         this.symbol = symbol;
     }
 
-    public double getCurrentPrice() {
-        return currentPrice;
+    public double getLastPrice() {
+        return lastPrice;
     }
 
     public void setCurrentPrice(double price) {
-        this.currentPrice = currentPrice;
+        this.lastPrice = lastPrice;
     }
 
-    public double getOpeningPrice() {
-        return openingPrice;
+    public double getOpen() {
+        return open;
     }
 
-    public void setOpeningPrice(double price) {
-        this.openingPrice = openingPrice;
+    public void setOpen(double price) {
+        this.open = open;
     }
 
     @Override
@@ -61,17 +61,17 @@ public class Stock {
     public String toString() {
         return "Name: " + getName()
                 +"\nSymbol: " + getSymbol()
-                +"\nCurrent Price: " + getCurrentPrice()
-                +"\nOpening Price:" + getOpeningPrice();
+                +"\nCurrent Price: " + getLastPrice()
+                +"\nOpening Price:" + getOpen();
     }
 
     public JSONObject getStockAsJSON(){
         JSONObject stockObject = new JSONObject();
         try {
-            stockObject.put("name", name);
-            stockObject.put("symbol", symbol);
-            stockObject.put("currentPrice", currentPrice);
-            stockObject.put("openingPrice", openingPrice);
+            stockObject.put("Name", name);
+            stockObject.put("Symbol", symbol);
+            stockObject.put("LastPrice", lastPrice);
+            stockObject.put("Open", open);
         } catch (JSONException e) {
             e.printStackTrace();
         }

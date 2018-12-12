@@ -1,68 +1,107 @@
 package edu.temple.portfolio;
 
 
+import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link PortfolioFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class PortfolioFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-    private JSONArray stocks;
+    private static final String ARG_STOCK_STR = "stockStr";
 
+    private String stockStr;
+    ArrayList<String> stockArrayList;
+    PortfolioAdapter portfolioAdapter;
+    ListView stockListView;
+    Context context;
+    View v;
+    TextView emptyList;
 
     public PortfolioFragment() {
-        // Required empty public constructor
+
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment PortfolioFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static PortfolioFragment newInstance(String param1, String param2) {
+    public static PortfolioFragment newInstance(String param1) {
         PortfolioFragment fragment = new PortfolioFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+        args.putString(ARG_STOCK_STR, param1);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    public static PortfolioFragment newInstance() {
+        PortfolioFragment fragment = new PortfolioFragment();
+        return fragment;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        this.context = context;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            stockStr = getArguments().getString(ARG_STOCK_STR);
+            stockArrayList.add(stockStr);
+        }
+        else{
+            stockArrayList = new ArrayList<String>();
         }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_portfolio, container, false);
+        if(v == null) {
+            v = inflater.inflate(R.layout.fragment_portfolio, container, false);
+            emptyList = v.findViewById(R.id.emptyList);
+            portfolioAdapter = new PortfolioAdapter(context, stockArrayList);
+            stockListView = v.findViewById(R.id.StockList);
+            stockListView.setAdapter(portfolioAdapter);
+            stockListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    DetailsFragment detailsFragment = DetailsFragment.newInstance(stockArrayList.get(position));
+                    getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.Container, detailsFragment).addToBackStack(null)
+                            .commit();
+                }
+            });
+        }
+        if(stockStr != null && stockStr != "") {
+            try {
+                JSONObject jsonStock = new JSONObject(stockStr);
+                updateStock(new Stock(jsonStock));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return v;
+    }
+
+    public void updateStock(Stock toAdd){
+        if(toAdd != null){
+            stockArrayList.add(toAdd.getStockAsJSON().toString());
+            emptyList.setText(" ");
+        }
     }
 
 }

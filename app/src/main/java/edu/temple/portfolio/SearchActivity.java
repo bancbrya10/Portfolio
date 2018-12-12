@@ -75,22 +75,18 @@ public class SearchActivity extends AppCompatActivity {
         addButton = findViewById(R.id.add_button);
         cancelButton = findViewById(R.id.cancel_button);
         stockText = findViewById(R.id.stockText);
-        Bundle extras = getIntent().getExtras();
-        connected = extras.getBoolean("isConnected");
 
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(connected){
-                    quoteService.getQuote(searchBar.getText().toString(), serviceHandler);
-                }
+                quoteService.getQuote(searchBar.getText().toString(), serviceHandler);
             }
         });
 
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onBackPressed();
+                finish();
             }
         });
     }
@@ -101,23 +97,23 @@ public class SearchActivity extends AppCompatActivity {
             JSONObject responseObject = (JSONObject) msg.obj;
             Stock currentStock = null;
             try {
-                currentStock = new Stock(responseObject.getJSONObject("list")
-                        .getJSONArray("resources")
-                        .getJSONObject(0)
-                        .getJSONObject("resource")
-                        .getJSONObject("fields"));
+                currentStock = new Stock(responseObject);
+                sendStock(currentStock);
             } catch (Exception e) {
+                //TODO: Make this toast work
+                Toast.makeText(getApplicationContext(), "ERROR: please enter a valid symbol", Toast.LENGTH_LONG);
                 e.printStackTrace();
+                Log.e("Error", "Error", e);
             }
-
-            updateViews(currentStock);
-
             return false;
         }
     });
 
-    private void updateViews(Stock currentStock) {
-        stockText.setText(currentStock.toString());
+    private void sendStock(Stock currentStock) {
+        Intent intent = new Intent();
+        intent.putExtra("StockData", currentStock.getStockAsJSON().toString());
+        setResult(MainActivity.RESULT_OK, intent);
+        finish();
     }
 
 }

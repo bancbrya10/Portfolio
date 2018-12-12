@@ -3,45 +3,36 @@ package edu.temple.portfolio;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.TextView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link DetailsFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class DetailsFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private static final String ARG_STOCK_STR = "stockStr";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
+    private String stockStr;
+    WebView stockChart;
+    TextView stockName;
+    TextView stockLastPrice;
+    TextView stockOpen;
+    Stock currentStock;
+    View v;
+    String urlPrefix = "https://macc.io/lab/cis3515/?symbol=";
 
     public DetailsFragment() {
-        // Required empty public constructor
+
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DetailsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static DetailsFragment newInstance(String param1, String param2) {
+    public static DetailsFragment newInstance(String param1) {
         DetailsFragment fragment = new DetailsFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+        args.putString(ARG_STOCK_STR, param1);
         fragment.setArguments(args);
         return fragment;
     }
@@ -50,8 +41,13 @@ public class DetailsFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            stockStr = getArguments().getString(ARG_STOCK_STR);
+            try {
+                JSONObject temp = new JSONObject(stockStr);
+                currentStock = new Stock(temp);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -59,7 +55,19 @@ public class DetailsFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_details, container, false);
+        v = inflater.inflate(R.layout.fragment_details, container, false);
+        stockChart = v.findViewById(R.id.stockDetailChart);
+        stockName = v.findViewById(R.id.stockDetailName);
+        stockOpen = v.findViewById(R.id.stockDetailOpen);
+        stockLastPrice = v.findViewById(R.id.stockDetailLastPrice);
+        stockName.setText("Company Name: " + currentStock.getName());
+        stockLastPrice.setText("Current Price: $" + currentStock.getLastPrice());
+        stockOpen.setText("Opening Price: $" + currentStock.getOpen());
+        stockChart.getSettings().setJavaScriptEnabled(true);
+        stockChart.loadUrl(urlPrefix + currentStock.getSymbol() + "&width=400&height=200");
+        return v;
     }
+
+
 
 }

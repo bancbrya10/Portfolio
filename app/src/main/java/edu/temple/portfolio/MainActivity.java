@@ -7,86 +7,70 @@ import android.content.ServiceConnection;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.recyclerview.extensions.ListAdapter;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity{
 
     FloatingActionButton fab;
-    QuoteService quoteService;
-    boolean connected;
+    int requestCode = 1;
+    PortfolioFragment portfolioFragment;
 
-    ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            QuoteService.QuoteBinder binder = (QuoteService.QuoteBinder) service;
-            quoteService = binder.getService();
-            connected = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            connected = false;
-        }
-    };
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Intent serviceIntent = new Intent(this, QuoteService.class);
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        unbindService(serviceConnection);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        portfolioFragment = PortfolioFragment.newInstance();
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction().add(R.id.Container, portfolioFragment).addToBackStack(null);
+        ft.commit();
+
         fab = findViewById(R.id.AddStock);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, SearchActivity.class).putExtra("isConnected", connected));
+                Intent intent = new Intent(getApplicationContext(), SearchActivity.class);
+                startActivityForResult(intent, requestCode);
             }
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if(requestCode == this.requestCode){
+            if(resultCode == RESULT_OK){
+                Bundle bundle = data.getExtras();
+                String stockStr = bundle.getString("StockData");
+                Log.d("Result Code", stockStr);
+                try {
+                    JSONObject jsonStock = new JSONObject(stockStr);
+                    portfolioFragment.updateStock(new Stock(jsonStock));
 
-    //TODO update handler to respond to portfolio fragment every second while running
-    Handler serviceHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            JSONObject responseObject = (JSONObject) msg.obj;
-            Stock currentStock = null;
-            try {
-                currentStock = new Stock(responseObject.getJSONObject("list")
-                        .getJSONArray("resources")
-                        .getJSONObject(0)
-                        .getJSONObject("resource")
-                        .getJSONObject("fields"));
-            } catch (Exception e) {
-                e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Log.e("Error", "Error", e);
+                }
             }
-
-            updateViews(currentStock);
-
-            return false;
         }
-    });
-
-    private void updateViews(Stock currentStock) {
-
     }
 }

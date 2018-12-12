@@ -3,10 +3,16 @@ package edu.temple.portfolio;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.RequiresApi;
+import android.util.Log;
+import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -28,6 +34,7 @@ public class QuoteService extends Service {
     }
 
     public void getQuote(final String symbol, final Handler handler) {
+
         Thread t = new Thread() {
             @Override
             public void run() {
@@ -51,11 +58,20 @@ public class QuoteService extends Service {
                     }
 
                     JSONObject stockObject = new JSONObject(response);
-                    Message msg = Message.obtain();
-                    msg.obj = stockObject;
-                    handler.sendMessage(msg);
+
+                    Log.d("Saved Stock Data", stockObject.toString());
+
+                    if(stockObject.has("Status")) {
+                        Message msg = Message.obtain();
+                        msg.obj = stockObject;
+                        handler.sendMessage(msg);
+                    }
+                    else{
+
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
+                    Log.e("Error", "Error", e);
                 }
             }
         };
